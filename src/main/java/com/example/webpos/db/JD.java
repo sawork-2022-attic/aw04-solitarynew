@@ -8,7 +8,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,11 +16,18 @@ import java.util.List;
 @Repository
 public class JD implements PosDB {
 
-
+    static String cache_url = null;
     private List<Product> products = null;
 
     @Override
     public List<Product> getProducts() {
+        try {
+            if (cache_url == null) cache_url = this.getClass().getClassLoader().getResource("cache.csv").getPath();
+            List<Product> cache = getCache();
+            if (cache != null) return cache;
+        } catch (IOException ignored) {
+        }
+
         try {
             if (products == null)
                 products = parseJD("Java");
@@ -28,6 +35,24 @@ public class JD implements PosDB {
             products = new ArrayList<>();
         }
         return products;
+    }
+
+    public List<Product> getCache() throws IOException {
+        File file = new File(cache_url);
+        if (file.exists()) {
+            List<Product> products = new ArrayList<>();
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            while ((line=br.readLine())!=null) {
+                String[] p = line.split(",");
+                if (p.length == 4) {
+                    products.add(new Product(p[0], p[1], Double.parseDouble(p[2]), p[3]));
+                }
+            }
+            br.close();
+            return products;
+        }
+        return null;
     }
 
     @Override
@@ -41,10 +66,18 @@ public class JD implements PosDB {
     }
 
     public static List<Product> parseJD(String keyword) throws IOException {
+        File file = new File(cache_url);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        BufferedWriter bw = new BufferedWriter(new FileWriter(file));
         //获取请求https://search.jd.com/Search?keyword=java
         String url = "https://search.jd.com/Search?keyword=" + keyword;
         //解析网页
-        Document document = Jsoup.parse(new URL(url), 10000);
+        Document document = Jsoup.connect(url)
+                .timeout(10000)
+                //.proxy("127.0.0.1", 8456)
+                .get();
         //所有js的方法都能用
         Element element = document.getElementById("J_goodsList");
         //获取所有li标签
@@ -64,10 +97,14 @@ public class JD implements PosDB {
                 title = title.substring(0, title.indexOf("，"));
 
             Product product = new Product(id, title, Double.parseDouble(price), img);
-
+            bw.write(id + "," + title + "," + price + "," + img + "\n");
+            bw.flush();
             list.add(product);
         }
+        bw.close();
         return list;
     }
+
+
 
 }

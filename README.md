@@ -20,3 +20,51 @@ And it also fetches a product list from jd.com every time a session begins.
 
 Please **write a report** on the performance differences you notices among the above tasks.
 
+# 实验报告
+
+## 1
+
+> Build a docker image for this application and performance a load testing against it.
+
+### 实验过程
+
+添加maven插件
+
+```xml
+<plugin>
+	<groupId>com.google.cloud.tools</groupId>
+	<artifactId>jib-maven-plugin</artifactId>
+	<version>3.2.0</version>
+	<configuration>
+		<to>
+			<image>app-pos</image>
+		</to>
+	</configuration>
+</plugin>
+```
+
+运行如下命令生成docker镜像
+
+```shell
+mvn compile jib:dockerBuild
+```
+
+![image-20220327154551543](README.assets/image-20220327154551543.png)
+
+运行如下三行命令，运行三个分别使用0.5,1,2个CPU的容器
+
+```shell
+docker run -d  --name app-pos-0.5 --cpus=0.5 -p 18080:8080 app-pos
+docker run -d  --name app-pos-1 --cpus=1 -p 28080:8080 app-pos
+docker run -d  --name app-pos-2 --cpus=2 -p 38080:8080 app-pos
+```
+
+编写Gatling脚本如下，访问一次主页，添加一个物品：
+
+```java
+ScenarioBuilder scn =
+	scenario("Test Pos")
+		.exec(http("request").get("/"))
+		.exec(http("request").get("/add?pid=13284888"));
+```
+

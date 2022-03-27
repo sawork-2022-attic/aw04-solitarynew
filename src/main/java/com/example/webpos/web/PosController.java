@@ -30,6 +30,9 @@ public class PosController {
 
     @GetMapping("/")
     public String pos(Model model) {
+        if (posService.products() != null && cart.getItems().isEmpty()) {
+            posService.add(cart, posService.randomProduct(), 1);
+        }
         model.addAttribute("products", posService.products());
         model.addAttribute("cart", cart);
         return "index";
@@ -37,6 +40,9 @@ public class PosController {
 
     @GetMapping("/add")
     public String addByGet(@RequestParam(name = "pid") String pid, Model model) {
+        if (posService.products() != null && cart.getItems().isEmpty()) {
+            posService.add(cart, posService.randomProduct(), 1);
+        }
         posService.add(cart, pid, 1);
         model.addAttribute("products", posService.products());
         model.addAttribute("cart", cart);
