@@ -6,6 +6,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.io.*;
@@ -21,10 +22,14 @@ public class JD implements PosDB {
 
     @Override
     public List<Product> getProducts() {
+        if (products != null) return products;
         try {
             if (cache_url == null) cache_url = this.getClass().getClassLoader().getResource("cache.csv").getPath();
             List<Product> cache = getCache();
-            if (cache != null) return cache;
+            if (cache != null) {
+                products = cache;
+                return products;
+            }
         } catch (IOException ignored) {
         }
 

@@ -282,3 +282,19 @@ server1,server2,server3,server4
 
 > Take care of the **cache missing** problem (you may cache the products from jd.com) and **session sharing** problem (you may use a standalone mysql db or a redis cluster). Performance load testings.
 
+### 实验过程
+
+#### cache missing
+
+- 在WebPOSApplication类上加上@EnableCaching注解
+- 在Service类的products方法上加上@Cacheable(value = "products")注解
+- 在pom.xml内导入依赖
+- 在application.properties配置文件内写入
+
+```
+spring.cache.type=redis
+spring.redis.host=localhost
+spring.redis.port=6379
+```
+
+- 启动redis在主机的6379号端口即可
