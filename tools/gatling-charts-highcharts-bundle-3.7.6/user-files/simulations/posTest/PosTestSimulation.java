@@ -25,7 +25,11 @@ public class PosTestSimulation extends Simulation {
     ScenarioBuilder scn =
             scenario("Test Pos")
                     .exec(http("request_1").get("/"))
-                    .exec(http("request_2").get("/add?pid=13284888"));
+                    .exec(http("request_2").get("/"))
+                    .exec(http("request_3").get("/"))
+                    .exec(http("request_4").get("/"))
+                    .exec(http("request_5").get("/"))
+                    .exec(http("request_6").get("/add?pid=13284888"));
 
     {
         setUp(scn.injectOpen(atOnceUsers(500)).protocols(httpProtocol));

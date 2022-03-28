@@ -1,25 +1,3 @@
-# WebPOS
-
-The demo shows a web POS system , which replaces the in-memory product db in aw03 with a one backed by 京东.
-
-
-![](jdpos.png)
-
-To run
-
-```shell
-mvn clean spring-boot:run
-```
-
-Currently, it creates a new session for each user and the session data is stored in an in-memory h2 db. 
-And it also fetches a product list from jd.com every time a session begins.
-
-1. Build a docker image for this application and performance a load testing against it.
-2. Make this system horizontally scalable by using haproxy and performance a load testing against it.
-3. Take care of the **cache missing** problem (you may cache the products from jd.com) and **session sharing** problem (you may use a standalone mysql db or a redis cluster). Performance load testings.
-
-Please **write a report** on the performance differences you notices among the above tasks.
-
 # 实验报告
 
 ## 1
@@ -298,3 +276,95 @@ spring.redis.port=6379
 ```
 
 - 启动redis在主机的6379号端口即可
+
+#### session sharing
+
+- 添加SessionConfig配置类
+- 添加pom依赖
+
+### 实验结果
+
+windows下的redis版本太低了不支持搭建集群，docke容器搞了半天最后还是没成功，于是下面的实验只能用单个节点的redis...
+
+此时模拟500个用户访问,使用2中水平拓展的四台使用一个CPU的服务器，结果如下：
+
+```shell
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                       1000 (OK=1000   KO=0     )
+> min response time                                   1458 (OK=1458   KO=-     )
+> max response time                                   3219 (OK=3219   KO=-     )
+> mean response time                                  2234 (OK=2234   KO=-     )
+> std deviation                                        477 (OK=477    KO=-     )
+> response time 50th percentile                       2151 (OK=2151   KO=-     )
+> response time 75th percentile                       2565 (OK=2565   KO=-     )
+> response time 95th percentile                       3037 (OK=3037   KO=-     )
+> response time 99th percentile                       3192 (OK=3192   KO=-     )
+> mean requests/sec                                166.667 (OK=166.667 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                             0 (  0%)
+> 800 ms < t < 1200 ms                                   0 (  0%)
+> t > 1200 ms                                         1000 (100%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+可以看到，相比于2中的结果，平均实验甚至有所下降，可能是因为模拟访问只访问一次'/'与一次’/add'，并没有很好的利用缓存，反而由于写入缓存影响了性能，于是修改访问逻辑为：
+
+```java
+ScenarioBuilder scn =
+	scenario("Test Pos")
+		.exec(http("request_1").get("/"))
+		.exec(http("request_2").get("/"))
+		.exec(http("request_3").get("/"))
+		.exec(http("request_4").get("/"))
+		.exec(http("request_5").get("/"))
+		.exec(http("request_6").get("/add?pid=13284888"));
+```
+
+意图更好的命中缓存，结果如下：
+
+```shell
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                       3000 (OK=3000   KO=0     )
+> min response time                                    650 (OK=650    KO=-     )
+> max response time                                   3494 (OK=3494   KO=-     )
+> mean response time                                  1919 (OK=1919   KO=-     )
+> std deviation                                        398 (OK=398    KO=-     )
+> response time 50th percentile                       1903 (OK=1903   KO=-     )
+> response time 75th percentile                       2042 (OK=2042   KO=-     )
+> response time 95th percentile                       2837 (OK=2837   KO=-     )
+> response time 99th percentile                       3051 (OK=3051   KO=-     )
+> mean requests/sec                                230.769 (OK=230.769 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                             8 (  0%)
+> 800 ms < t < 1200 ms                                  73 (  2%)
+> t > 1200 ms                                         2919 ( 97%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+可以看到，平均响应时间相比上面有所下降，甚至<1200ms的响应从了0%到2%，推测是由于命中了缓存从而快速响应，体现了缓存的作用。
+
+# WebPOS
+
+The demo shows a web POS system , which replaces the in-memory product db in aw03 with a one backed by 京东.
+
+
+![](jdpos.png)
+
+To run
+
+```shell
+mvn clean spring-boot:run
+```
+
+Currently, it creates a new session for each user and the session data is stored in an in-memory h2 db. 
+And it also fetches a product list from jd.com every time a session begins.
+
+1. Build a docker image for this application and performance a load testing against it.
+2. Make this system horizontally scalable by using haproxy and performance a load testing against it.
+3. Take care of the **cache missing** problem (you may cache the products from jd.com) and **session sharing** problem (you may use a standalone mysql db or a redis cluster). Performance load testings.
+
+Please **write a report** on the performance differences you notices among the above tasks.
