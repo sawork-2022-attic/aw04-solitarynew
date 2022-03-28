@@ -28,6 +28,6 @@ public class PosTestSimulation extends Simulation {
                     .exec(http("request_2").get("/add?pid=13284888"));
 
     {
-        setUp(scn.injectOpen(atOnceUsers(100)).protocols(httpProtocol));
+        setUp(scn.injectOpen(atOnceUsers(500)).protocols(httpProtocol));
     }
 }

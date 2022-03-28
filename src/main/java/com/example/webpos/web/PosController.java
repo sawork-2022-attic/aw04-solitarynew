@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 @Controller
@@ -29,10 +30,8 @@ public class PosController {
     }
 
     @GetMapping("/")
-    public String pos(Model model) {
-        if (posService.products() != null && cart.getItems().isEmpty()) {
-            posService.add(cart, posService.randomProduct(), 1);
-        }
+    public String pos(Model model, HttpServletRequest httpServletRequest) {
+        httpServletRequest.getSession(true);
         model.addAttribute("products", posService.products());
         model.addAttribute("cart", cart);
         return "index";
@@ -40,9 +39,6 @@ public class PosController {
 
     @GetMapping("/add")
     public String addByGet(@RequestParam(name = "pid") String pid, Model model) {
-        if (posService.products() != null && cart.getItems().isEmpty()) {
-            posService.add(cart, posService.randomProduct(), 1);
-        }
         posService.add(cart, pid, 1);
         model.addAttribute("products", posService.products());
         model.addAttribute("cart", cart);
