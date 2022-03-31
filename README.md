@@ -347,6 +347,41 @@ ScenarioBuilder scn =
 
 可以看到，平均响应时间相比上面有所下降，甚至<1200ms的响应从了0%到2%，推测是由于命中了缓存从而快速响应，体现了缓存的作用。
 
+### redis集群
+
+参照网上的教程使用ruby脚本在windows上直接搭建了redis集群
+
+```
+redis-trib.rb create --replicas 1 127.0.0.1:30001 127.0.0.1:30002 127.0.0.1:30003 127.0.0.1:30004 127.0.0.1:30005 127.0.0.1:30006
+```
+
+结果如下：
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                       3000 (OK=3000   KO=0     )
+> min response time                                     17 (OK=17     KO=-     )
+> max response time                                   1557 (OK=1557   KO=-     )
+> mean response time                                   664 (OK=664    KO=-     )
+> std deviation                                        231 (OK=231    KO=-     )
+> response time 50th percentile                        666 (OK=666    KO=-     )
+> response time 75th percentile                        781 (OK=781    KO=-     )
+> response time 95th percentile                       1024 (OK=1024   KO=-     )
+> response time 99th percentile                       1417 (OK=1417   KO=-     )
+> mean requests/sec                                    600 (OK=600    KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          2346 ( 78%)
+> 800 ms < t < 1200 ms                                 563 ( 19%)
+> t > 1200 ms                                           91 (  3%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+共计500个模拟用户访问，seesion与对应的expires共计1000条，每个redis服务器大约330条
+
+![image-20220331133934237](README.assets/image-20220331133934237.png)
+
 # WebPOS
 
 The demo shows a web POS system , which replaces the in-memory product db in aw03 with a one backed by 京东.
